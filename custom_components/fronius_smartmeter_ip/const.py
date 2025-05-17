@@ -1,0 +1,183 @@
+"""Constants for the Fronius Smartmeter IP integration."""
+from homeassistant.const import (
+    UnitOfPower, UnitOfApparentPower, UnitOfEnergy, UnitOfElectricCurrent,
+    UnitOfElectricPotential, UnitOfFrequency, PERCENTAGE, UnitOfTemperature,
+    UnitOfTime, DEGREE
+)
+
+DOMAIN = "fronius_smartmeter_ip"
+
+# Default update intervals
+DEFAULT_MEASUREMENTS_INTERVAL_SECONDS = 10
+DEFAULT_CONFIG_INTERVAL_SECONDS = 300
+
+# API Paths & Params
+API_PATH_MEASUREMENTS = "/wizard/public/api/measurements"
+API_PATH_CONFIG = "/wizard/public/api/measurements/configuration"
+API_QUERY_PARAMS = {"status": "1"}
+
+# Sensor Name Prefix
+SENSOR_NAME_PREFIX = "Fronius SM"
+
+# Standard Unit Strings & HA Constants for easier access
+UNIT_WATT = UnitOfPower.WATT
+UNIT_KILO_WATT = UnitOfPower.KILO_WATT # Für größere Werte, falls benötigt
+UNIT_VOLT_AMPERE = UnitOfApparentPower.VOLT_AMPERE
+UNIT_VOLT_AMPERE_REACTIVE = "var"  # Einheit für Blindleistung (Power)
+UNIT_WATT_HOUR = UnitOfEnergy.WATT_HOUR
+UNIT_KILO_WATT_HOUR = UnitOfEnergy.KILO_WATT_HOUR # Für größere Werte
+UNIT_VOLT_AMPERE_REACTIVE_HOUR = "varh"  # Einheit für Blindenergie (Energy)
+UNIT_KILO_VOLT_AMPERE_REACTIVE_HOUR = "kvarh" # Für größere Werte
+UNIT_VOLT_AMPERE_HOUR = "VAh"            # Einheit für Scheinenergie (Energy)
+UNIT_KILO_VOLT_AMPERE_HOUR = "kVAh"      # Für größere Werte
+UNIT_VOLT = UnitOfElectricPotential.VOLT
+UNIT_AMPERE = UnitOfElectricCurrent.AMPERE
+UNIT_HERTZ = UnitOfFrequency.HERTZ
+UNIT_CELSIUS = UnitOfTemperature.CELSIUS
+UNIT_DEGREE = DEGREE
+UNIT_PERCENTAGE = PERCENTAGE
+UNIT_SECONDS = UnitOfTime.SECONDS
+
+# Keys from API for direct mapping or special handling (basierend auf Screenshot und JSON)
+KEY_FREQUENCY = "F"
+KEY_TEMPERATURE = "T"
+KEY_VOLTAGE_A = "VA" # L-N Spannung Phase A (lt. Screenshot und JSON-Werten)
+KEY_VOLTAGE_B = "VB" # L-N Spannung Phase B
+KEY_VOLTAGE_C = "VC" # L-N Spannung Phase C
+KEY_CURRENT_A = "IA"
+KEY_CURRENT_B = "IB"
+KEY_CURRENT_C = "IC"
+KEY_CURRENT_N = "IN"
+KEY_CURRENT_N0 = "IN0" # Bedeutung im Screenshot nicht ganz klar, aber vorhanden
+KEY_VOLTAGE_PHASE_ANGLE_A = "UAA" # Screenshot "Angle Current", aber Werte sind Spannungswinkel
+KEY_VOLTAGE_PHASE_ANGLE_B = "UAB"
+KEY_VOLTAGE_PHASE_ANGLE_C = "UAC"
+KEY_CURRENT_PHASE_ANGLE_A = "IAA" # Screenshot "calculated Phase Angle"
+KEY_CURRENT_PHASE_ANGLE_B = "IAB"
+KEY_CURRENT_PHASE_ANGLE_C = "IAC"
+
+KEY_ACTIVE_POWER_A = "PA"
+KEY_ACTIVE_POWER_B = "PB"
+KEY_ACTIVE_POWER_C = "PC"
+KEY_ACTIVE_POWER_TOTAL = "PT"
+KEY_ACTIVE_POWER_FUNDAMENTAL_A = "PAF"
+KEY_ACTIVE_POWER_FUNDAMENTAL_B = "PBF"
+KEY_ACTIVE_POWER_FUNDAMENTAL_C = "PCF"
+KEY_ACTIVE_POWER_FUNDAMENTAL_TOTAL = "PTF"
+KEY_ACTIVE_POWER_HARMONIC_A = "PAH"
+KEY_ACTIVE_POWER_HARMONIC_B = "PBH"
+KEY_ACTIVE_POWER_HARMONIC_C = "PCH"
+KEY_ACTIVE_POWER_HARMONIC_TOTAL = "PTH"
+
+KEY_REACTIVE_POWER_A = "QA"
+KEY_REACTIVE_POWER_B = "QB"
+KEY_REACTIVE_POWER_C = "QC"
+KEY_REACTIVE_POWER_TOTAL = "QT"
+# KEY_REACTIVE_POWER_FUNDAMENTAL_... (nicht explizit im Screenshot, aber könnten existieren)
+
+KEY_APPARENT_POWER_A = "SA"
+KEY_APPARENT_POWER_B = "SB"
+KEY_APPARENT_POWER_C = "SC"
+KEY_APPARENT_POWER_TOTAL = "ST"
+
+KEY_POWER_FACTOR_A = "PFA"
+KEY_POWER_FACTOR_B = "PFB"
+KEY_POWER_FACTOR_C = "PFC"
+KEY_POWER_FACTOR_TOTAL = "PFT"
+
+KEY_VOLTAGE_L1_L2 = "VAB" # Line-Line Voltage
+KEY_VOLTAGE_L2_L3 = "VBC"
+KEY_VOLTAGE_L3_L1 = "VCA"
+KEY_VOLTAGE_AVG_LN = "VT" # Average L-N Voltage
+KEY_VOLTAGE_AVG_LL = "VPT" # Average L-L Voltage
+
+KEY_THD_VOLTAGE_A = "THUA"
+KEY_THD_VOLTAGE_B = "THUB"
+KEY_THD_VOLTAGE_C = "THUC"
+# KEY_THD_VOLTAGE_N (im Screenshot, aber nicht im JSON Key THUN?)
+KEY_THD_CURRENT_A = "THIA"
+KEY_THD_CURRENT_B = "THIB"
+KEY_THD_CURRENT_C = "THIC"
+# KEY_THD_CURRENT_N (im Screenshot, aber nicht im JSON Key THIN?)
+
+
+KEY_OPERATING_TIME_MILLISECONDS = "TIME" # Screenshot "Operating time"
+KEY_SAMPLES = "SAMPLES"
+KEY_STATUS_RAW = "STATUS"
+
+# Energy Keys - Mapping JSON keys to what's on screenshot
+# Forward Active Energy (Wh)
+KEY_ENERGY_EXPORT_ACTIVE_A = "EFAA"
+KEY_ENERGY_EXPORT_ACTIVE_B = "EFAB"
+KEY_ENERGY_EXPORT_ACTIVE_C = "EFAC"
+KEY_ENERGY_EXPORT_ACTIVE_TOTAL = "EFAT"
+# Forward Reactive Energy (varh)
+KEY_ENERGY_EXPORT_REACTIVE_A = "EFRA"
+KEY_ENERGY_EXPORT_REACTIVE_B = "EFRB"
+KEY_ENERGY_EXPORT_REACTIVE_C = "EFRC"
+KEY_ENERGY_EXPORT_REACTIVE_TOTAL = "EFRT"
+# Reverse Active Energy (Wh)
+KEY_ENERGY_IMPORT_ACTIVE_A = "ERAA"
+KEY_ENERGY_IMPORT_ACTIVE_B = "ERAB"
+KEY_ENERGY_IMPORT_ACTIVE_C = "ERAC"
+KEY_ENERGY_IMPORT_ACTIVE_TOTAL = "ERAT"
+# Reverse Reactive Energy (varh)
+KEY_ENERGY_IMPORT_REACTIVE_A = "ERRA"
+KEY_ENERGY_IMPORT_REACTIVE_B = "ERRB"
+KEY_ENERGY_IMPORT_REACTIVE_C = "ERRC"
+KEY_ENERGY_IMPORT_REACTIVE_TOTAL = "ERRT"
+
+# Apparent Energy (VAh) - JSON has ESA/EST, EFSA/EFST, ERSA/ERST
+# Screenshot has "Apparent Energy Forward" (Total: EFST?) and "Apparent Energy Reverse" (Total: ERST?)
+# And a general "Apparent Energy" (Total: EST? or EFST+ERST?)
+KEY_ENERGY_APPARENT_A = "ESA" # General Apparent Energy Phase A
+KEY_ENERGY_APPARENT_B = "ESB"
+KEY_ENERGY_APPARENT_C = "ESC"
+KEY_ENERGY_APPARENT_TOTAL = "EST" # General Apparent Energy Total
+
+KEY_ENERGY_EXPORT_APPARENT_A = "EFSA" # Forward Apparent Energy
+KEY_ENERGY_EXPORT_APPARENT_B = "EFSB"
+KEY_ENERGY_EXPORT_APPARENT_C = "EFSC"
+KEY_ENERGY_EXPORT_APPARENT_TOTAL = "EFST"
+
+KEY_ENERGY_IMPORT_APPARENT_A = "ERSA" # Reverse Apparent Energy
+KEY_ENERGY_IMPORT_APPARENT_B = "ERSB"
+KEY_ENERGY_IMPORT_APPARENT_C = "ERSC"
+KEY_ENERGY_IMPORT_APPARENT_TOTAL = "ERST"
+
+# Fundamental and Harmonic Energies (Wh, from screenshot)
+KEY_ENERGY_EXPORT_ACTIVE_FUNDAMENTAL_TOTAL = "EFTF" # JSON
+KEY_ENERGY_EXPORT_ACTIVE_HARMONIC_TOTAL = "EFTH"   # JSON
+KEY_ENERGY_IMPORT_ACTIVE_FUNDAMENTAL_TOTAL = "ERTF" # JSON
+KEY_ENERGY_IMPORT_ACTIVE_HARMONIC_TOTAL = "ERTH"   # JSON
+# Phasenweise (EFAF, EFAH etc. aus JSON)
+KEY_ENERGY_EXPORT_ACTIVE_FUNDAMENTAL_A = "EFAF"
+KEY_ENERGY_EXPORT_ACTIVE_FUNDAMENTAL_B = "EFBF"
+KEY_ENERGY_EXPORT_ACTIVE_FUNDAMENTAL_C = "EFCF"
+KEY_ENERGY_EXPORT_ACTIVE_HARMONIC_A = "EFAH"
+KEY_ENERGY_EXPORT_ACTIVE_HARMONIC_B = "EFBH"
+KEY_ENERGY_EXPORT_ACTIVE_HARMONIC_C = "EFCH"
+KEY_ENERGY_IMPORT_ACTIVE_FUNDAMENTAL_A = "ERAF"
+KEY_ENERGY_IMPORT_ACTIVE_FUNDAMENTAL_B = "ERBF"
+KEY_ENERGY_IMPORT_ACTIVE_FUNDAMENTAL_C = "ERCF"
+KEY_ENERGY_IMPORT_ACTIVE_HARMONIC_A = "ERAH"
+KEY_ENERGY_IMPORT_ACTIVE_HARMONIC_B = "ERBH"
+KEY_ENERGY_IMPORT_ACTIVE_HARMONIC_C = "ERCH"
+
+# Other energy keys from JSON, if interpretation is clear
+# EVT, EMT, ERT1-4, ERA1-4, ERB1-4, ERC1-4 ... could be added if meaning/unit is known
+
+# Calculated sensor keys
+KEY_OPERATING_TIME_SECONDS = "operating_time_seconds"
+KEY_IMAX_CALCULATED = "imax_calculated"
+
+
+# Status Bits (from JS logic & screenshot interpretation)
+STATUS_BIT_DEFINITIONS = {
+    0: "Phase A Voltage/Data OK",
+    1: "Phase B Voltage/Data OK",
+    2: "Phase C Voltage/Data OK",
+    4: "Phase A Current Data OK",
+    5: "Phase B Current Data OK",
+    6: "Phase C Current Data OK",
+}

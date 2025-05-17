@@ -1,0 +1,13 @@
+{
+  "domain": "fronius_smartmeter_ip",
+  "name": "Fronius Smartmeter IP",
+  "documentation": "https://github.com/OoZAGoO/fronius-smartmeter-ip-hacs",
+  "issue_tracker": "https://github.com/OoZAGoO/fronius-smartmeter-ip-hacs/issues",
+  "dependencies": [],
+  "codeowners": ["@OoZAGoO"],
+  "requirements": ["httpx>=0.23"],
+  "version": "0.2.0",
+  "iot_class": "local_polling",
+  "config_flow": true,
+  "integration_type": "device"
+}

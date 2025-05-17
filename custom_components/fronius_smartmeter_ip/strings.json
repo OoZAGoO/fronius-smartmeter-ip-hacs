@@ -1,0 +1,26 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Fronius Smartmeter IP Setup",
+        "description": "Enter the connection details for your Fronius Smartmeter API (e.g., from a Fronius Datamanager or GEN24 inverter with Smart Meter connected).",
+        "data": {
+          "url": "API Base URL (e.g., http://your-smartmeter-ip-or-inverter-ip)",
+          "username": "Username (for htaccess protection, if any)",
+          "password": "Password (for htaccess protection, if any)"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect_http": "Failed to connect: HTTP error. Check URL and ensure the device is reachable.",
+      "cannot_connect_request": "Failed to connect: Network error. Check URL and network connection.",
+      "invalid_auth": "Authentication failed. Check username and password if htaccess is used.",
+      "invalid_response": "The API returned an invalid or unexpected JSON response.",
+      "unknown": "An unknown error occurred during connection setup.",
+      "already_configured": "This Fronius Smartmeter IP (based on URL) is already configured."
+    },
+    "abort": {
+      "already_configured": "This Fronius Smartmeter IP (based on URL) is already configured."
+    }
+  }
+}
