@@ -1,6 +1,6 @@
 {
   "domain": "fronius_smartmeter_ip",
-  "name": "Fronius Smartmeter IP",
+  "name": "Fronius Smart Meter IP",
   "documentation": "https://github.com/OoZAGoO/fronius-smartmeter-ip-hacs",
   "issue_tracker": "https://github.com/OoZAGoO/fronius-smartmeter-ip-hacs/issues",
   "dependencies": [],

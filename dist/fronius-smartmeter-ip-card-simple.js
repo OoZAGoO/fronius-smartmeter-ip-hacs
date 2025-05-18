@@ -1,6 +1,37 @@
 import { LitElement, html, css } from 'https://unpkg.com/lit-element?module';
 
-class FroniusSmartmeterIPCard extends LitElement {
+class FroniusSmartmeterIPCardSimple extends LitElement {
+  static get type() {
+    return 'fronius-smartmeter-ip-card-simple'; // Muss mit dem Tag in customElements.define() übereinstimmen
+  }
+
+  static get name() {
+    return 'Fronius Smartmeter Phasenplot'; // Ein benutzerfreundlicher Name für den Auswahl-Dialog
+  }
+
+  static get description() {
+    // Eine Beschreibung hinzufügen, kann manchmal helfen.
+    return 'Visualisiert Spannungs- und Stromphasenvektoren für den Fronius Smart Meter IP.';
+  }
+
+  static get preview() {
+    // Explizit angeben, ob eine Vorschau versucht werden soll.
+    // true: HA versucht, eine Vorschau basierend auf getStubConfig zu rendern.
+    // false: Es wird keine Vorschau versucht (Karte könnte trotzdem gelistet werden).
+    // Teste beide Werte (true und false), beginne mit true.
+    return true;
+  }
+
+  // Diese Methode signalisiert, dass deine Karte den Lovelace UI-Editor unterstützt.
+  // Sie ist besonders wichtig, wenn du getConfigElement und getStubConfig verwendest.
+  static getLovelaceConfig() {
+    return {
+      type: this.type, // Verweist auf static get type()
+      // Hier könntest du auch Standardwerte für die Stub-Konfiguration angeben,
+      // aber getStubConfig ist dafür der primäre Ort.
+    };
+  }
+
   static get properties() {
     return {
       hass: Object,
@@ -8,8 +39,8 @@ class FroniusSmartmeterIPCard extends LitElement {
     };
   }
 
-    static get styles() {
-        return css`
+  static get styles() {
+    return css`
           :host {
             display: block;
           }
@@ -56,49 +87,64 @@ class FroniusSmartmeterIPCard extends LitElement {
             stroke-dasharray: 5; /* Testweise auskommentieren */
           }
         `;
-    }
+  }
+
   setConfig(config) {
-    if (!config.entities 
-        || !config.entities.voltage_l1 || !config.entities.voltage_l2 || !config.entities.voltage_l3 
-        || !config.entities.voltage_angle_l1 || !config.entities.voltage_angle_l2 || !config.entities.voltage_angle_l3 
-        || !config.entities.current_l1 || !config.entities.current_l2 || !config.entities.current_l3 
-        || !config.entities.current_angle_l1 || !config.entities.current_angle_l2 || !config.entities.current_angle_l3 
-      ) {
-        throw new Error('Bitte alle benötigten Entitäten in der Kartenkonfiguration angeben!');
+    if (!config.entity_prefix) {
+      throw new Error('Bitte "entity_prefix" in der Kartenkonfiguration angeben!');
     }
     this.config = config; // Speichere die gesamte Konfiguration
-}
+  }
 
   static async getConfigElement() {
-    // Hier könntest du ein UI für die Konfiguration deiner Karte erstellen, wenn du möchtest
-    // Für den Anfang nicht notwendig.
-    // await import("./fronius-smartmeter-ip-card-editor"); // Beispiel für eine separate Editor-Datei
-    // return document.createElement("fronius-smartmeter-ip-card-editor");
-    return null; // Kein visueller Editor für den Anfang
+      // console.log("FroniusCard: getConfigElement wird aufgerufen"); // Debug-Log
+      try {
+          // Sicherstellen, dass der Pfad zur Editor-Datei exakt stimmt (Groß-/Kleinschreibung!)
+          // und dass die Editor-Datei selbst keine Syntaxfehler hat.
+          await import('./fronius-smartmeter-ip-card-simple-editor.js');
+          return document.createElement('fronius-smartmeter-ip-card-simple-editor');
+      } catch (e) {
+          console.error("FroniusCard: Kritischer Fehler beim Laden des Editors 'fronius-smartmeter-ip-card-simple-editor.js'. Dies könnte die Anzeige im Picker verhindern.", e);
+          // Im Fehlerfall ein einfaches Element zurückgeben, um den Prozess nicht komplett abzubrechen.
+          const errorDiv = document.createElement('div');
+          errorDiv.innerHTML = 'Fehler beim Laden des Karten-Editors. <br>Bitte Browser-Konsole prüfen.';
+          return errorDiv;
+      }
   }
 
   static getStubConfig(hass, entities, entitiesFallback) {
-      // Diese Funktion wird aufgerufen, wenn der Benutzer die Karte zum ersten Mal hinzufügt.
-      // Sie kann eine Standardkonfiguration vorschlagen.
-      // Du musst hier die Entitäts-IDs finden, die zu deinem Schema passen könnten.
-      // Das ist fortgeschrittener, für den Anfang kannst du eine Basis-Stub-Config zurückgeben.
-      const L1VoltageSensors = entities.filter(eid => eid.endsWith("_voltage_l1") && eid.includes("fronius_sm"));
-      // ... ähnliche Logik für andere Sensoren
-      return { 
-          title: "Phasenplot Fronius Smartmeter",
-          entities: {
-              voltage_l1: L1VoltageSensors.length > 0 ? L1VoltageSensors[0] : "sensor.example_voltage_l1",
-              // Fülle weitere Entitäten basierend auf Logik oder als Platzhalter
-          }
-      };
+    // Diese Funktion wird aufgerufen, wenn der Benutzer die Karte zum ersten Mal hinzufügt.
+    // Sie kann eine Standardkonfiguration vorschlagen.
+    let suggestedPrefix = "sensor.fronius_sm_meine_geraete_id"; // Standard-Platzhalter
+
+    // Versuche, einen passenden Präfix aus vorhandenen Entitäten zu finden
+    // Sucht nach einem Sensor, der typischerweise von dieser Integration erstellt wird (z.B. _voltage_l1)
+    const froniusVoltageSensors = Object.keys(hass.states).filter(
+      eid => eid.startsWith("sensor.fronius_sm_") && eid.endsWith("_voltage_l1")
+    );
+
+    if (froniusVoltageSensors.length > 0) {
+      // Extrahiere den Präfix: sensor.fronius_sm_geraetename_voltage_l1 -> sensor.fronius_sm_geraetename
+      const parts = froniusVoltageSensors[0].split('_');
+      if (parts.length > 2) { // Stellt sicher, dass genug Teile vorhanden sind
+        parts.pop(); // Entfernt '_l1'
+        parts.pop(); // Entfernt '_voltage'
+        suggestedPrefix = parts.join('_');
+      }
+    }
+
+    return {
+      title: "Fronius Phasenplot",
+      entity_prefix: suggestedPrefix
+    };
   }
 
   getCardSize() {
-      return 5; // Schätze, wie viele Standard-Zeilen deine Karte ungefähr belegt (z.B. 5 für deine SVG-Höhe)
+    return 5; // Schätze, wie viele Standard-Zeilen deine Karte ungefähr belegt (z.B. 5 für deine SVG-Höhe)
   }
 
-    render() {
-        return html`
+  render() {
+    return html`
           <ha-card header="${this.config.title}"> <div class="card-content"> <svg id="diagram" viewBox="0 0 340 440" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" version="1.1">
                   <marker id="arrowhead0" viewBox="0 0 60 60" refX="60" refY="30" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                       <path d="M 0 0 L 60 30 L 0 60 z" fill="#777777"></path>
@@ -149,7 +195,7 @@ class FroniusSmartmeterIPCard extends LitElement {
             </div>
           </ha-card>
         `;
-    }
+  }
 
   updated(changedProps) {
     if (changedProps.has('hass')) {
@@ -158,25 +204,40 @@ class FroniusSmartmeterIPCard extends LitElement {
   }
 
   _draw() {
-    if (!this.hass || !this.config.entities) {
+    if (!this.hass || !this.config || !this.config.entity_prefix) {
+      console.warn("FroniusCard: hass oder entity_prefix nicht verfügbar in _draw.");
       return;
     }
-    // Lesen der Sensorwerte aus HA
     const s = this.hass.states;
-    const entities = this.config.entities;
+    const prefix = this.config.entity_prefix;
 
-    const VA = parseFloat(s[entities.voltage_l1]?.state) || 0;
-    const VB = parseFloat(s[entities.voltage_l2]?.state) || 0;
-    const VC = parseFloat(s[entities.voltage_l3]?.state) || 0;
-    const UAA = parseFloat(s[entities.voltage_angle_l1]?.state) || 0;
-    const UAB = parseFloat(s[entities.voltage_angle_l2]?.state) || 0;
-    const UAC = parseFloat(s[entities.voltage_angle_l3]?.state) || 0;
-    const IA = parseFloat(s[entities.current_l1]?.state) || 0;
-    const IB = parseFloat(s[entities.current_l2]?.state) || 0;
-    const IC = parseFloat(s[entities.current_l3]?.state) || 0;
-    const IAA = parseFloat(s[entities.current_angle_l1]?.state) || 0;
-    const IAB = parseFloat(s[entities.current_angle_l2]?.state) || 0;
-    const IAC = parseFloat(s[entities.current_angle_l3]?.state) || 0;
+    const getValue = (suffix, entityNameForLog) => {
+      const entityId = `${prefix}${suffix}`;
+      if (!s[entityId]) {
+        console.warn(`FroniusCard: Entität ${entityId} (${entityNameForLog}) nicht gefunden.`);
+        return 0;
+      }
+      const val = parseFloat(s[entityId]?.state) || 0;
+      if (isNaN(val)) {
+        console.warn(`FroniusCard: Wert für ${entityId} (${entityNameForLog}) ist NaN nach parseFloat.`);
+        return 0;
+      }
+      return val;
+    };
+
+    // Suffixe basierend auf den Entitäts-ID-Endungen (kleingeschrieben, von SensorEntityDescription.name abgeleitet)
+    const VA = getValue('_voltage_l1', 'Voltage L1');
+    const VB = getValue('_voltage_l2', 'Voltage L2');
+    const VC = getValue('_voltage_l3', 'Voltage L3');
+    const UAA = getValue('_voltage_phase_angle_l1', 'Voltage Angle L1');
+    const UAB = getValue('_voltage_phase_angle_l2', 'Voltage Angle L2');
+    const UAC = getValue('_voltage_phase_angle_l3', 'Voltage Angle L3');
+    const IA = getValue('_current_l1', 'Current L1');
+    const IB = getValue('_current_l2', 'Current L2');
+    const IC = getValue('_current_l3', 'Current L3');
+    const IAA = getValue('_current_phase_angle_l1', 'Current Phase Angle L1');
+    const IAB = getValue('_current_phase_angle_l2', 'Current Phase Angle L2');
+    const IAC = getValue('_current_phase_angle_l3', 'Current Phase Angle L3');
 
     // Erstes Set: Spannungspfeile
     this._setCursor('arrowVA', UAA, VA / 230);
@@ -197,6 +258,8 @@ class FroniusSmartmeterIPCard extends LitElement {
     this._setCursor('arrowIA', UAA + IAA, IA / imax);
     this._setCursor('arrowIB', UAB + IAB, IB / imax);
     this._setCursor('arrowIC', UAC + IAC, IC / imax);
+
+
   }
 
   _setCursor(id, angle, amplitude) {
@@ -215,4 +278,4 @@ class FroniusSmartmeterIPCard extends LitElement {
   }
 }
 
-customElements.define('fronius-smartmeter-ip-card', FroniusSmartmeterIPCard);
+customElements.define('fronius-smartmeter-ip-card-simple', FroniusSmartmeterIPCardSimple);

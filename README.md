@@ -2,7 +2,8 @@
 
 [![GitHub Release][releases-shield]][releases-link]
 [![License][license-shield]][license-link]
-Diese benutzerdefinierte Integration für Home Assistant ermöglicht das Auslesen von Daten eines Fronius Smart Meters (oder kompatibler Geräte wie Fronius GEN24 Wechselrichter mit angeschlossenem Smart Meter), dessen API über eine htaccess-Authentifizierung geschützt ist. Sie stellt diverse elektrische Messwerte als Sensoren bereit und beinhaltet eine passende Lovelace-Karte zur Visualisierung des Phasenplots.
+
+Diese benutzerdefinierte Integration für Home Assistant ermöglicht das Auslesen von Daten eines Fronius Smartmeters IP dessen API über eine htaccess-Authentifizierung geschützt ist. Sie stellt diverse elektrische Messwerte als Sensoren bereit und beinhaltet eine passende Lovelace-Karte zur Visualisierung des Phasenplots. Ein passender Wechselrichter (z.B. GEN24) ist nicht erforderlich!
 
 ## Screenshots
 ![Phaseplot-Card-dark](./images/card-dark.png)
@@ -31,8 +32,7 @@ Diese benutzerdefinierte Integration für Home Assistant ermöglicht das Auslese
 ## Voraussetzungen
 
 * Eine laufende Home Assistant Instanz.
-* Ein Fronius Smart Meter (oder ein kompatibles Fronius-Gerät wie ein GEN24 Wechselrichter mit verbundenem Smart Meter), der im lokalen Netzwerk erreichbar ist.
-* Die API des Geräts muss unter den Pfaden `/wizard/public/api/measurements` und `/wizard/public/api/measurements/configuration` Daten liefern und per htaccess (Benutzername/Passwort) geschützt sein.
+* Ein Fronius Smartmeter IP, der im lokalen Netzwerk erreichbar ist.
 
 ## Installation
 
@@ -160,7 +160,7 @@ Ersetze DEIN_PREFIX mit dem tatsächlichen Präfix deiner Sensoren (z.B. fronius
 * Verwende die Entwicklerkonsole des Browsers, um console.log-Ausgaben deiner Karte zu überprüfen (falls du welche für Debugging hinzugefügt hast).
 
 **Beitrag leisten**
-Fehlerberichte, Funktionswünsche und Pull Requests sind herzlich willkommen! Bitte erstelle ein Issue für Fehler oder neue Ideen.
+Fehlerberichte sind herzlich willkommen! Bitte erstelle ein Issue für Fehler oder neue Ideen.
 
 **Lizenz**
 Dieses Projekt steht unter der MIT Lizenz. 
