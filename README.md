@@ -3,6 +3,14 @@
 [![GitHub Release][releases-shield]][releases-link]
 [![License][license-shield]][license-link]
 
+### WORK IN PROGRESS !!!
+Diese Integration habe ich in erster Linie für mich selbst geschrieben. 
+Trotzdem möchte ich sie euch nicht vorenthalten. 
+Da ich mit Integrationen für Home Assistant noch nicht viel zu tun hatte und weil ich es austesten wollte, wurde dieser Code zu großen Teilen mit Gemini 2.5 Pro entwickelt. Alles Lob und auch Hass gebührt Gemini. ;)
+Als Vorlage für die Karten diente der originale Phasenplot der Expertenansicht des Fronius Smart Meters IP. Alle Credits an diesen Künstler. Der zusätzliche, errechnete N-Vektor des Stroms im Neutralleiter wurde von mir aus den Vektoren der Einzelströme berechnet. Dies ist nicht Teil des ursprünglichen Plots. Auch nutze ich nicht den "calculated N" der API, da ich diesen Wert nicht nachvollziehen kann und er meiner Meinung nach nicht korrekt ist.
+
+## Kurzbeschreibung
+
 Diese benutzerdefinierte Integration für Home Assistant ermöglicht das Auslesen von Daten eines Fronius Smartmeters IP dessen API über eine htaccess-Authentifizierung geschützt ist. Sie stellt diverse elektrische Messwerte als Sensoren bereit und beinhaltet eine passende Lovelace-Karte zur Visualisierung des Phasenplots. Ein passender Wechselrichter (z.B. GEN24) ist nicht erforderlich!
 
 ## Screenshots
@@ -95,15 +103,15 @@ Eine vollständige Liste der Sensoren findest du nach erfolgreicher Einrichtung 
 
 ## Einrichtung der Lovelace Phasenplot-Karte (Manuell)
 
-Diese Integration beinhaltet eine benutzerdefinierte Lovelace-Karte, um den Phasenplot (Spannungs- und Stromvektoren) darzustellen.
+Diese Integration beinhaltet zwei benutzerdefinierte Lovelace-Karten, um den Phasenplot (Spannungs- und Stromvektoren) darzustellen. Die Karten sind von der Funktion her identisch. Bei der "simple" Variante wird nur das Prefix des Sensors benötigt. Bei der normalen Karte müssen alle Entititäten verknüpft werden. Nur sinnvoll wenn man kein Smart Meter IP oder nicht meine Integration nutzt.
 
 **Schritt 1: Kopieren der Kartendatei**
 
-1.  Lade die Datei `fronius-smartmeter-ip-card.js` aus dem `dist/`-Verzeichnis dieses GitHub-Repositorys herunter.
+1.  Lade die Dateien `fronius-smartmeter-ip-card.js` und die zugehörige `fronius-smartmeter-ip-card-editor.js` und/oder die "simple"-Version aus dem `dist/`-Verzeichnis dieses GitHub-Repositorys herunter. 
 2.  Erstelle das Verzeichnis `www` in deinem Home Assistant Konfigurationsverzeichnis (`<config_dir>/www/`), falls es noch nicht existiert.
     * Optional, aber empfohlen für Ordnung: Erstelle einen Unterordner speziell für Community-Karten, z.B. `<config_dir>/www/community/fronius-smartmeter-ip/`.
-3.  Kopiere die heruntergeladene `fronius-smartmeter-ip-card.js` in dieses Verzeichnis.
-    * Beispielpfad: `<config_dir>/www/community/fronius-smartmeter-ip/fronius-smartmeter-ip-card.js`
+3.  Kopiere die heruntergeladene Dateien in dieses Verzeichnis.
+    * Beispielpfad: `<config_dir>/www/community/fronius-smartmeter-ip/fronius-smartmeter-ip-card.js`, usw.
 
 **Schritt 2: Als Lovelace-Ressource hinzufügen**
 
@@ -117,14 +125,16 @@ Diese Integration beinhaltet eine benutzerdefinierte Lovelace-Karte, um den Phas
         `/local/fronius-smartmeter-ip-card.js`
 5.  Wähle als **Ressourcentyp** "**JavaScript-Modul**".
 6.  Klicke auf "**Erstellen**".
-7.  Möglicherweise musst du deinen Browser-Cache leeren (Strg+F5 oder Cmd+Shift+R), damit die Ressource korrekt geladen wird.
+7.  Verfahre mit den übrigen Karten (Simple bzw. Editor) analog.
+8.  Möglicherweise musst du deinen Browser-Cache leeren (Strg+F5 oder Cmd+Shift+R), damit die Ressource korrekt geladen wird.
 
 **Schritt 3: Karte zum Dashboard hinzufügen**
 
 1.  Öffne das Dashboard, zu dem du die Karte hinzufügen möchtest, und aktiviere den Bearbeitungsmodus (Stiftsymbol).
 2.  Klicke auf "**+ Karte hinzufügen**".
-3.  Wähle unten die Karte "**Manuell**".
-4.  Gib die folgende YAML-Konfiguration ein (passe die Entitäts-IDs an deine tatsächlichen Entitäten an!):
+3.  Suche nach "**fronius**". Die Karte(n) sollt(en) in der Auswahl erscheinen
+    oder wähle die Karte "**Manuell**".
+4.  (nur bei Manueller Karte) Gib die folgende YAML-Konfiguration ein (passe die Entitäts-IDs an deine tatsächlichen Entitäten an!):
 
 ```yaml
 type: custom:fronius-smartmeter-ip-card
