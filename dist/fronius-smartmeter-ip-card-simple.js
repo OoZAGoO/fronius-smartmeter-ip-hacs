@@ -140,12 +140,12 @@ class FroniusSmartmeterIPCardSimple extends LitElement {
   }
 
   getCardSize() {
-    return 5; // Schätze, wie viele Standard-Zeilen deine Karte ungefähr belegt (z.B. 5 für deine SVG-Höhe)
+    return 3; // Schätze, wie viele Standard-Zeilen deine Karte ungefähr belegt (z.B. 5 für deine SVG-Höhe)
   }
 
   render() {
     return html`
-          <ha-card header="${this.config.title}"> <div class="card-content"> <svg id="diagram" viewBox="0 0 340 440" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" version="1.1">
+          <ha-card header="${this.config.title}"> <div class="card-content"> <svg id="diagram" viewBox="0 0 340 410" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" version="1.1">
                   <marker id="arrowhead0" viewBox="0 0 60 60" refX="60" refY="30" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                       <path d="M 0 0 L 60 30 L 0 60 z" fill="#777777"></path>
                   </marker>
@@ -160,6 +160,9 @@ class FroniusSmartmeterIPCardSimple extends LitElement {
                   </marker>
                   <marker id="arrowheadC" viewBox="0 0 60 60" refX="60" refY="30" markerUnits="strokeWidth" markerWidth="8" markerHeight="8" orient="auto">
                       <path d="M 0 0 L 60 30 L 0 60 z" fill="#1E90FF"></path>
+                  </marker>
+                  <marker id="arrowheadN" viewBox="0 0 60 60" refX="60" refY="30" markerUnits="strokeWidth" markerWidth="8" markerHeight="8" orient="auto">
+                      <path d="M 0 0 L 60 30 L 0 60 z" fill="#000000"></path>
                   </marker>
                   <circle cx="170" cy="170" r="140" style="stroke:#777777;stroke-width:1;" stroke-dasharray="10,0" fill="white"></circle>
                   <line x1="170" y1="0" x2="170" y2="340" style="stroke:#777777;stroke-width:1" stroke-dasharray="5, 5" marker-start="url(#arrowhead1)" marker-end="url(#arrowhead0)"></line>
@@ -184,6 +187,7 @@ class FroniusSmartmeterIPCardSimple extends LitElement {
                   <line id="arrowIA" x1="170" y1="170" x2="170" y2="170" class="current" marker-end="url(#arrowheadA)"></line>
                   <line id="arrowIB" x1="170" y1="170" x2="170" y2="170" class="current" marker-end="url(#arrowheadB)"></line>
                   <line id="arrowIC" x1="170" y1="170" x2="170" y2="170" class="current" marker-end="url(#arrowheadC)"></line>
+                  <line id="arrowIN" x1="170" y1="170" x2="170" y2="170" class="current" marker-end="url(#arrowheadN)"></line>
                   <svg x="0" y="340"> <text class="legend" x="30" y="20">Phase A: Voltage</text>  <line x1="140" y1="20" x2="190" y2="20" class="voltage" marker-end="url(#arrowheadA)"></line>
                       <text class="legend" x="200" y="20">Current</text>      <line x1="260" y1="20" x2="310" y2="20" class="current" marker-end="url(#arrowheadA)"></line>
                       <text class="legend" x="30" y="40">Phase B: Voltage</text>  <line x1="140" y1="40" x2="190" y2="40" class="voltage" marker-end="url(#arrowheadB)"></line>
@@ -244,8 +248,56 @@ class FroniusSmartmeterIPCardSimple extends LitElement {
     this._setCursor('arrowVB', UAB, VB / 230);
     this._setCursor('arrowVC', UAC, VC / 230);
 
+    // Berechnung des Stroms im Neutralleiter
+    // Hilfsfunktion: Grad in Radiant umrechnen
+    function toRadians(degrees) {
+        return degrees * (Math.PI / 180);
+    }
+    
+    // Hilfsfunktion: Radiant in Grad umrechnen
+    function toDegrees(radians) {
+        return radians * (180 / Math.PI);
+    }
+    
+    // 1. Absolute Phasenwinkel der Ströme berechnen (in Radiant für die Math-Funktionen)
+    // Der gegebene Stromphasenwinkel (IAA, IAB, IAC) ist relativ zum jeweiligen Spannungsphasenwinkel (UAA, UAB, UAC).
+    const absPhaseAngleARad = toRadians(UAA + IAA);
+    const absPhaseAngleBRad = toRadians(UAB + IAB);
+    const absPhaseAngleCRad = toRadians(UAC + IAC);
+    
+    // 2. Ströme in kartesische Komponenten (Real- und Imaginärteil) umwandeln
+    // I_real = I_betrag * cos(winkel_rad)
+    // I_imag = I_betrag * sin(winkel_rad)
+    
+    const IAx = IA * Math.cos(absPhaseAngleARad);
+    const IAy = IA * Math.sin(absPhaseAngleARad);
+    
+    const IBx = IB * Math.cos(absPhaseAngleBRad);
+    const IBy = IB * Math.sin(absPhaseAngleBRad);
+    
+    const ICx = IC * Math.cos(absPhaseAngleCRad);
+    const ICy = IC * Math.sin(absPhaseAngleCRad);
+    
+    // 3. Komponenten der Phasenströme addieren, um die Komponenten des Neutralleiterstroms zu erhalten
+    const INx = IAx + IBx + ICx;
+    const INy = IAy + IBy + ICy;
+    
+    // 4. Neutralleiterstrom von kartesischen Komponenten zurück in Polarform (Betrag und Winkel) umwandeln
+    const IN = Math.sqrt(INx * INx + INy * INy); // Betrag des Neutralleiterstroms
+    
+    // Winkel des Neutralleiterstroms in Radiant berechnen
+    // Math.atan2(y, x) gibt den Winkel in Radiant zwischen der positiven x-Achse und dem Punkt (x, y) zurück.
+    const IAN_rad = Math.atan2(INy, INx);
+    
+    // Winkel in Grad umwandeln
+    const IAN = toDegrees(IAN_rad);
+    
+    // Ausgabe der Ergebnisse (kann an Ihre Bedürfnisse angepasst werden)
+    console.log("Strom im Neutralleiter (IN): " + IN.toFixed(3) + " A");
+    console.log("Phasenwinkel des Neutralleiterstroms (IAN): " + IAN.toFixed(3) + " Grad");
+    
     // Strom-Maximum berechnen
-    let imax = Math.ceil(Math.max(IA, IB, IC, 0.1));
+    let imax = Math.ceil(Math.max(IA, IB, IC, IN, 0.1));
 
     // Skalierungstexte aktualisieren
     const root = this.shadowRoot;
@@ -258,6 +310,9 @@ class FroniusSmartmeterIPCardSimple extends LitElement {
     this._setCursor('arrowIA', UAA + IAA, IA / imax);
     this._setCursor('arrowIB', UAB + IAB, IB / imax);
     this._setCursor('arrowIC', UAC + IAC, IC / imax);
+    
+    // Zusatz: Neturalleiter plotten
+    this._setCursor('arrowIN', IAN, IN / imax);
 
 
   }

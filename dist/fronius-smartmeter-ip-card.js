@@ -1,6 +1,28 @@
 import { LitElement, html, css } from 'https://unpkg.com/lit-element?module';
 
 class FroniusSmartmeterIPCard extends LitElement {
+  static get type() {
+    return 'fronius-smartmeter-ip-card';
+  }
+
+  static get name() {
+    return 'Fronius Smartmeter Phasenplot (Konfigurierbare Entitäten)';
+  }
+
+  static get description() {
+    return 'Visualisiert Spannungs- und Stromphasenvektoren für einen Smart Meter mit individuell konfigurierbaren Entitäten.';
+  }
+
+  static get preview() {
+    return true;
+  }
+
+  static getLovelaceConfig() {
+    return {
+      type: this.type,
+    };
+  }
+
   static get properties() {
     return {
       hass: Object,
@@ -8,98 +30,201 @@ class FroniusSmartmeterIPCard extends LitElement {
     };
   }
 
-    static get styles() {
-        return css`
-          :host {
+  static get styles() {
+    return css`
+        :host {
             display: block;
-          }
-          ha-card {
-            overflow: hidden; /* Wichtig, um den Inhalt zu begrenzen */
-          }
-          .card-content { /* Neuer Wrapper für das SVG */
+            /* Standard-Fallback-Farben definieren, falls Variablen nicht gesetzt sind (optional, aber gut) */
+            --color-l1: #e14621;
+            --color-l2: green;
+            --color-l3: #1E90FF;
+            --color-n: #000000;
+        }
+        ha-card {
+            overflow: hidden;
+        }
+        .card-content {
             padding: 16px;
             display: flex;
-            justify-content: center; /* Zentriert das SVG horizontal */
+            justify-content: center;
             align-items: center;
-          }
-          svg#diagram { /* Nur das Haupt-SVG ansprechen */
+        }
+        svg#diagram {
             width: 100%;
-            max-width: 340px; /* Behält die Originalbreite als Maximum bei */
-            height: auto;    /* Höhe passt sich an, um Seitenverhältnis via viewBox zu wahren */
-            /* font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; /* Aus body übernommen */
-          }
-    
-          /* Relevante Stile aus der originalen CSS, angepasst */
-          .plottext {
-            font-size: 12pt; /* Evtl. px oder em für bessere Skalierbarkeit in HA verwenden */
-            fill: #777777;
-          }
-          .legend {
-            font-size: 10pt; /* Evtl. px oder em */
-            fill: var(--secondary-text-color);
-            /* alignment-baseline ist ein SVG-Attribut, nicht CSS. Kann direkt am <text>-Element gesetzt werden. */
-          }
-          text.voltage {
-            fill: #e14621;
-          }
-          text.current {
-            fill: #1E90FF;
-          }
-          line.voltage {
-            stroke: #e14621;
-            stroke-width: 1.5; /* Etwas dicker für bessere Sichtbarkeit, original war 1 */
-            stroke-dasharray: 2; /* Testweise auskommentieren, um zu sehen, ob durchgezogene Linien erscheinen */
-          }
-          line.current {
-            stroke: #1E90FF;
-            stroke-width: 1.5; /* Etwas dicker für bessere Sichtbarkeit, original war 1 */
-            stroke-dasharray: 5; /* Testweise auskommentieren */
-          }
-        `;
-    }
+            max-width: 340px;
+            height: auto;
+        }
+        .plottext {
+            font-size: 12pt;
+            fill: #777777; /* Allgemeine Achsenbeschriftungen bleiben grau */
+        }
+        .legend {
+            font-size: 10pt;
+            fill: var(--secondary-text-color); /* Legendentext bleibt Standard */
+        }
+
+        /* Farben für Achsen-Skalierungstexte (Spannung/Strom-Maximalwerte) */
+        /* Diese können generisch bleiben oder auch angepasst werden, falls gewünscht */
+        text.voltage { /* z.B. +230V Text */
+            fill: #e14621; /* Behält aktuelle generische Farbe für Achsenbeschriftungen */
+        }
+        text.current { /* z.B. +1A Text */
+            fill: #1E90FF; /* Behält aktuelle generische Farbe für Achsenbeschriftungen */
+        }
+
+        /* Pfeilspitzen (Marker) Farben über CSS Variablen */
+        marker#arrowheadA path { fill: var(--color-l1); }
+        marker#arrowheadB path { fill: var(--color-l2); }
+        marker#arrowheadC path { fill: var(--color-l3); }
+        marker#arrowheadN path { fill: var(--color-n); }
+
+        /* Vektorlinien Farben über CSS Variablen */
+        /* Spannungsvektoren */
+        line#arrowVA { stroke: var(--color-l1); stroke-width: 1.5; stroke-dasharray: 2; }
+        line#arrowVB { stroke: var(--color-l2); stroke-width: 1.5; stroke-dasharray: 2; }
+        line#arrowVC { stroke: var(--color-l3); stroke-width: 1.5; stroke-dasharray: 2; }
+
+        /* Stromvektoren */
+        line#arrowIA { stroke: var(--color-l1); stroke-width: 1.5; stroke-dasharray: 5; }
+        line#arrowIB { stroke: var(--color-l2); stroke-width: 1.5; stroke-dasharray: 5; }
+        line#arrowIC { stroke: var(--color-l3); stroke-width: 1.5; stroke-dasharray: 5; }
+        line#arrowIN { stroke: var(--color-n); stroke-width: 1.5; stroke-dasharray: 5; }
+
+        /* Legenden-Linien Farben */
+        line.legend-line.phase-a { stroke: var(--color-l1); stroke-width: 1.5; }
+        line.legend-line.phase-b { stroke: var(--color-l2); stroke-width: 1.5; }
+        line.legend-line.phase-c { stroke: var(--color-l3); stroke-width: 1.5; }
+        /* Ggf. Strichart für Legende anpassen, falls gewünscht */
+
+    `;
+  }
+
   setConfig(config) {
-    if (!config.entities 
-        || !config.entities.voltage_l1 || !config.entities.voltage_l2 || !config.entities.voltage_l3 
-        || !config.entities.voltage_angle_l1 || !config.entities.voltage_angle_l2 || !config.entities.voltage_angle_l3 
-        || !config.entities.current_l1 || !config.entities.current_l2 || !config.entities.current_l3 
-        || !config.entities.current_angle_l1 || !config.entities.current_angle_l2 || !config.entities.current_angle_l3 
-      ) {
-        throw new Error('Bitte alle benötigten Entitäten in der Kartenkonfiguration angeben!');
+    const requiredEntities = [
+      'voltage_l1_entity', 'voltage_l2_entity', 'voltage_l3_entity',
+      'voltage_angle_l1_entity', 'voltage_angle_l2_entity', 'voltage_angle_l3_entity',
+      'current_l1_entity', 'current_l2_entity', 'current_l3_entity',
+      'current_angle_l1_entity', 'current_angle_l2_entity', 'current_angle_l3_entity'
+    ];
+    for (const entityKey of requiredEntities) {
+      if (!config[entityKey]) {
+        throw new Error(`Bitte Entität für "${entityKey}" in der Kartenkonfiguration angeben!`);
+      }
     }
-    this.config = config; // Speichere die gesamte Konfiguration
-}
+    this.config = {
+        ...config,
+        use_german_colors: config.use_german_colors || false, // Standardwert
+    };
+  }
 
   static async getConfigElement() {
-    // Hier könntest du ein UI für die Konfiguration deiner Karte erstellen, wenn du möchtest
-    // Für den Anfang nicht notwendig.
-    // await import("./fronius-smartmeter-ip-card-editor"); // Beispiel für eine separate Editor-Datei
-    // return document.createElement("fronius-smartmeter-ip-card-editor");
-    return null; // Kein visueller Editor für den Anfang
+        // --- BEGINN DES WORKAROUNDS ---
+        try {
+            if (!customElements.get('ha-entity-picker')) {
+                console.warn(
+                    "HA-ENTITY-PICKER WORKAROUND: 'ha-entity-picker' ist noch nicht definiert. Versuche, Abhängigkeiten über 'hui-entities-card' zu laden..."
+                );
+        
+                // Versuche, eine Kern-HA-Karte zu "aktivieren", die wahrscheinlich ha-entity-picker verwendet.
+                // hui-entities-card ist ein guter Kandidat, da ihr Editor Entity-Picker verwendet.
+                const tempElement = document.createElement('hui-entities-card');
+        
+                // Prüfen, ob die Methode existiert, bevor sie aufgerufen wird
+                if (tempElement && typeof tempElement.constructor.getConfigElement === 'function') {
+                    // Wir rufen getConfigElement auf, um die Ladevorgänge anzustoßen.
+                    // Das Ergebnis selbst benötigen wir hier nicht.
+                    await tempElement.constructor.getConfigElement();
+                    console.log(
+                        "HA-ENTITY-PICKER WORKAROUND: 'hui-entities-card.constructor.getConfigElement()' wurde aufgerufen."
+                    );
+        
+                    if (customElements.get('ha-entity-picker')) {
+                        console.log(
+                            "HA-ENTITY-PICKER WORKAROUND: ERFOLGREICH! 'ha-entity-picker' ist jetzt definiert."
+                        );
+                    } else {
+                        console.warn(
+                            "HA-ENTITY-PICKER WORKAROUND: Teilweise ausgeführt, aber 'ha-entity-picker' ist immer noch nicht definiert."
+                        );
+                    }
+                } else {
+                    console.warn(
+                        "HA-ENTITY-PICKER WORKAROUND: 'hui-entities-card' oder dessen 'getConfigElement' Methode nicht verfügbar."
+                    );
+                }
+            } else {
+                console.log("'ha-entity-picker' ist bereits definiert. Kein Workaround nötig.");
+            }
+        } catch (err) {
+            console.warn("HA-ENTITY-PICKER WORKAROUND: Fehler während des Versuchs:", err);
+        }
+        // --- ENDE DES WORKAROUNDS ---
+      try {
+          await import('./fronius-smartmeter-ip-card-editor.js');
+          return document.createElement('fronius-smartmeter-ip-card-editor');
+      } catch (e) {
+          console.error("FroniusCardAdvanced: Kritischer Fehler beim Laden des Editors 'fronius-smartmeter-ip-card-editor.js'.", e);
+          const errorDiv = document.createElement('div');
+          errorDiv.innerHTML = 'Fehler beim Laden des Karten-Editors. <br>Bitte Browser-Konsole prüfen.';
+          return errorDiv;
+      }
   }
 
   static getStubConfig(hass, entities, entitiesFallback) {
-      // Diese Funktion wird aufgerufen, wenn der Benutzer die Karte zum ersten Mal hinzufügt.
-      // Sie kann eine Standardkonfiguration vorschlagen.
-      // Du musst hier die Entitäts-IDs finden, die zu deinem Schema passen könnten.
-      // Das ist fortgeschrittener, für den Anfang kannst du eine Basis-Stub-Config zurückgeben.
-      const L1VoltageSensors = entities.filter(eid => eid.endsWith("_voltage_l1") && eid.includes("fronius_sm"));
-      // ... ähnliche Logik für andere Sensoren
-      return { 
-          title: "Phasenplot Fronius Smartmeter",
-          entities: {
-              voltage_l1: L1VoltageSensors.length > 0 ? L1VoltageSensors[0] : "sensor.example_voltage_l1",
-              // Fülle weitere Entitäten basierend auf Logik oder als Platzhalter
-          }
-      };
+    let basePrefix = "sensor.smart_meter_"; // Allgemeinerer Platzhalter
+    
+    // Versuche, einen Fronius-Präfix zu finden
+    const froniusVoltageSensors = Object.keys(hass.states).filter(
+      eid => eid.startsWith("sensor.fronius_sm_") && eid.endsWith("_voltage_l1")
+    );
+
+    if (froniusVoltageSensors.length > 0) {
+      const parts = froniusVoltageSensors[0].split('_');
+      if (parts.length > 2) { 
+        parts.pop(); // _l1 entfernen
+        parts.pop(); // _voltage entfernen
+        basePrefix = parts.join('_') + "_"; // z.B. sensor.fronius_sm_geraetename_
+      }
+    } else {
+        // Fallback, falls keine spezifischen Fronius-Sensoren gefunden werden
+        const genericSensors = Object.keys(hass.states).filter(
+            eid => eid.includes("_voltage_l1") && eid.startsWith("sensor.")
+        );
+        if (genericSensors.length > 0) {
+            const parts = genericSensors[0].split('_');
+            if (parts.length > 2) {
+                parts.pop();
+                parts.pop();
+                basePrefix = parts.join('_') + "_"; // z.B. sensor.my_meter_
+            }
+        }
+    }
+
+    // Suffixe basierend auf den ursprünglichen Entitäts-Endungen
+    return {
+      title: "Smart Meter Phasenplot",
+      voltage_l1_entity: `${basePrefix}voltage_l1`,
+      voltage_l2_entity: `${basePrefix}voltage_l2`,
+      voltage_l3_entity: `${basePrefix}voltage_l3`,
+      voltage_angle_l1_entity: `${basePrefix}voltage_phase_angle_l1`,
+      voltage_angle_l2_entity: `${basePrefix}voltage_phase_angle_l2`,
+      voltage_angle_l3_entity: `${basePrefix}voltage_phase_angle_l3`,
+      current_l1_entity: `${basePrefix}current_l1`,
+      current_l2_entity: `${basePrefix}current_l2`,
+      current_l3_entity: `${basePrefix}current_l3`,
+      current_angle_l1_entity: `${basePrefix}current_phase_angle_l1`,
+      current_angle_l2_entity: `${basePrefix}current_phase_angle_l2`,
+      current_angle_l3_entity: `${basePrefix}current_phase_angle_l3`,
+    };
   }
 
   getCardSize() {
-      return 5; // Schätze, wie viele Standard-Zeilen deine Karte ungefähr belegt (z.B. 5 für deine SVG-Höhe)
+    return 3; 
   }
 
-    render() {
-        return html`
-          <ha-card header="${this.config.title}"> <div class="card-content"> <svg id="diagram" viewBox="0 0 340 440" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" version="1.1">
+  render() {
+    return html`
+          <ha-card header="${this.config.title || 'Phasenplot'}"> <div class="card-content"> <svg id="diagram" viewBox="0 0 340 410" xmlns="http://www.w3.org/2000/svg" xlink="http://www.w3.org/1999/xlink" version="1.1">
                   <marker id="arrowhead0" viewBox="0 0 60 60" refX="60" refY="30" markerUnits="strokeWidth" markerWidth="10" markerHeight="10" orient="auto">
                       <path d="M 0 0 L 60 30 L 0 60 z" fill="#777777"></path>
                   </marker>
@@ -114,6 +239,9 @@ class FroniusSmartmeterIPCard extends LitElement {
                   </marker>
                   <marker id="arrowheadC" viewBox="0 0 60 60" refX="60" refY="30" markerUnits="strokeWidth" markerWidth="8" markerHeight="8" orient="auto">
                       <path d="M 0 0 L 60 30 L 0 60 z" fill="#1E90FF"></path>
+                  </marker>
+                  <marker id="arrowheadN" viewBox="0 0 60 60" refX="60" refY="30" markerUnits="strokeWidth" markerWidth="8" markerHeight="8" orient="auto">
+                      <path d="M 0 0 L 60 30 L 0 60 z" fill="#000000"></path>
                   </marker>
                   <circle cx="170" cy="170" r="140" style="stroke:#777777;stroke-width:1;" stroke-dasharray="10,0" fill="white"></circle>
                   <line x1="170" y1="0" x2="170" y2="340" style="stroke:#777777;stroke-width:1" stroke-dasharray="5, 5" marker-start="url(#arrowhead1)" marker-end="url(#arrowhead0)"></line>
@@ -138,79 +266,160 @@ class FroniusSmartmeterIPCard extends LitElement {
                   <line id="arrowIA" x1="170" y1="170" x2="170" y2="170" class="current" marker-end="url(#arrowheadA)"></line>
                   <line id="arrowIB" x1="170" y1="170" x2="170" y2="170" class="current" marker-end="url(#arrowheadB)"></line>
                   <line id="arrowIC" x1="170" y1="170" x2="170" y2="170" class="current" marker-end="url(#arrowheadC)"></line>
-                  <svg x="0" y="340"> <text class="legend" x="30" y="20">Phase A: Voltage</text>  <line x1="140" y1="20" x2="190" y2="20" class="voltage" marker-end="url(#arrowheadA)"></line>
-                      <text class="legend" x="200" y="20">Current</text>      <line x1="260" y1="20" x2="310" y2="20" class="current" marker-end="url(#arrowheadA)"></line>
-                      <text class="legend" x="30" y="40">Phase B: Voltage</text>  <line x1="140" y1="40" x2="190" y2="40" class="voltage" marker-end="url(#arrowheadB)"></line>
-                      <text class="legend" x="200" y="40">Current</text>      <line x1="260" y1="40" x2="310" y2="40" class="current" marker-end="url(#arrowheadB)"></line>
-                      <text class="legend" x="30" y="60">Phase C: Voltage</text>  <line x1="140" y1="60" x2="190" y2="60" class="voltage" marker-end="url(#arrowheadC)"></line> 
-                      <text class="legend" x="200" y="60">Current</text>      <line x1="260" y1="60" x2="310" y2="60" class="current" marker-end="url(#arrowheadC)"></line>   
+                  <line id="arrowIN" x1="170" y1="170" x2="170" y2="170" class="current" marker-end="url(#arrowheadN)"></line>
+                  <svg x="0" y="340">
+                      <text class="legend" x="30" y="20">Phase A: Voltage</text>  <line style="stroke-dasharray: 2;" x1="140" y1="20" x2="190" y2="20" class="legend-line phase-a" marker-end="url(#arrowheadA)"></line>
+                      <text class="legend" x="200" y="20">Current</text>      <line style="stroke-dasharray: 5;" x1="260" y1="20" x2="310" y2="20" class="legend-line phase-a" marker-end="url(#arrowheadA)"></line>
+                      <text class="legend" x="30" y="40">Phase B: Voltage</text>  <line style="stroke-dasharray: 2;" x1="140" y1="40" x2="190" y2="40" class="legend-line phase-b" marker-end="url(#arrowheadB)"></line>
+                      <text class="legend" x="200" y="40">Current</text>      <line style="stroke-dasharray: 5;" x1="260" y1="40" x2="310" y2="40" class="legend-line phase-b" marker-end="url(#arrowheadB)"></line>
+                      <text class="legend" x="30" y="60">Phase C: Voltage</text>  <line style="stroke-dasharray: 2;" x1="140" y1="60" x2="190" y2="60" class="legend-line phase-c" marker-end="url(#arrowheadC)"></line>
+                      <text class="legend" x="200" y="60">Current</text>      <line style="stroke-dasharray: 5;" x1="260" y1="60" x2="310" y2="60" class="legend-line phase-c" marker-end="url(#arrowheadC)"></line>
                   </svg>
               </svg>
             </div>
           </ha-card>
         `;
-    }
+  }
 
-  updated(changedProps) {
-    if (changedProps.has('hass')) {
+  firstUpdated(changedProperties) {
+    super.firstUpdated(changedProperties);
+    this._applyColorTheme(); // Farben initial setzen
+    // Der Workaround für den Picker, falls noch vorhanden und benötigt:
+    // this._ensurePickerIsDefined();
+  }
+
+  updated(changedProperties) { // changedProperties ist der korrekte Parametername
+    // Korrekte Abfrage: changedProperties statt changedProps
+    if (changedProperties.has('config') || changedProperties.has('hass')) {
+        this._applyColorTheme(); // Farben bei Config-Änderung aktualisieren
+    }
+    // Korrekte Abfrage: changedProperties statt changedProps
+    if (changedProperties.has('hass') || changedProperties.has('config')) {
       this._draw();
     }
+    // Rufen Sie auch die updated-Methode der Superklasse auf, falls diese Logik enthält (gute Praxis)
+    super.updated(changedProperties);
   }
 
   _draw() {
-    if (!this.hass || !this.config.entities) {
+    if (!this.hass || !this.config) {
+      console.warn("FroniusCardAdvanced: hass oder config nicht verfügbar in _draw.");
       return;
     }
-    // Lesen der Sensorwerte aus HA
     const s = this.hass.states;
-    const entities = this.config.entities;
 
-    const VA = parseFloat(s[entities.voltage_l1]?.state) || 0;
-    const VB = parseFloat(s[entities.voltage_l2]?.state) || 0;
-    const VC = parseFloat(s[entities.voltage_l3]?.state) || 0;
-    const UAA = parseFloat(s[entities.voltage_angle_l1]?.state) || 0;
-    const UAB = parseFloat(s[entities.voltage_angle_l2]?.state) || 0;
-    const UAC = parseFloat(s[entities.voltage_angle_l3]?.state) || 0;
-    const IA = parseFloat(s[entities.current_l1]?.state) || 0;
-    const IB = parseFloat(s[entities.current_l2]?.state) || 0;
-    const IC = parseFloat(s[entities.current_l3]?.state) || 0;
-    const IAA = parseFloat(s[entities.current_angle_l1]?.state) || 0;
-    const IAB = parseFloat(s[entities.current_angle_l2]?.state) || 0;
-    const IAC = parseFloat(s[entities.current_angle_l3]?.state) || 0;
+    const getValue = (entityIdConfigKey, entityNameForLog) => {
+      const entityId = this.config[entityIdConfigKey];
+      if (!entityId) {
+        // console.warn(`FroniusCardAdvanced: Konfigurationsschlüssel ${entityIdConfigKey} ist nicht gesetzt.`);
+        return 0; // Erwartet, dass setConfig Fehler wirft, wenn nicht vorhanden
+      }
+      if (!s[entityId]) {
+        // console.warn(`FroniusCardAdvanced: Entität ${entityId} (${entityNameForLog}) nicht gefunden.`);
+        return 0;
+      }
+      const val = parseFloat(s[entityId]?.state);
+      if (isNaN(val)) {
+        // console.warn(`FroniusCardAdvanced: Wert für ${entityId} (${entityNameForLog}) ist NaN nach parseFloat. State war: ${s[entityId]?.state}`);
+        return 0;
+      }
+      return val;
+    };
 
-    // Erstes Set: Spannungspfeile
+    const VA = getValue('voltage_l1_entity', 'Voltage L1');
+    const VB = getValue('voltage_l2_entity', 'Voltage L2');
+    const VC = getValue('voltage_l3_entity', 'Voltage L3');
+    const UAA = getValue('voltage_angle_l1_entity', 'Voltage Angle L1');
+    const UAB = getValue('voltage_angle_l2_entity', 'Voltage Angle L2');
+    const UAC = getValue('voltage_angle_l3_entity', 'Voltage Angle L3');
+    const IA = getValue('current_l1_entity', 'Current L1');
+    const IB = getValue('current_l2_entity', 'Current L2');
+    const IC = getValue('current_l3_entity', 'Current L3');
+    const IAA = getValue('current_angle_l1_entity', 'Current Angle L1');
+    const IAB = getValue('current_angle_l2_entity', 'Current Angle L2');
+    const IAC = getValue('current_angle_l3_entity', 'Current Angle L3');
+    
     this._setCursor('arrowVA', UAA, VA / 230);
     this._setCursor('arrowVB', UAB, VB / 230);
     this._setCursor('arrowVC', UAC, VC / 230);
 
-    // Strom-Maximum berechnen
-    let imax = Math.ceil(Math.max(IA, IB, IC, 0.1));
+    function toRadians(degrees) { return degrees * (Math.PI / 180); }
+    function toDegrees(radians) { return radians * (180 / Math.PI); }
+    
+    const absPhaseAngleARad = toRadians(UAA + IAA);
+    const absPhaseAngleBRad = toRadians(UAB + IAB);
+    const absPhaseAngleCRad = toRadians(UAC + IAC);
+    
+    const IAx = IA * Math.cos(absPhaseAngleARad);
+    const IAy = IA * Math.sin(absPhaseAngleARad);
+    const IBx = IB * Math.cos(absPhaseAngleBRad);
+    const IBy = IB * Math.sin(absPhaseAngleBRad);
+    const ICx = IC * Math.cos(absPhaseAngleCRad);
+    const ICy = IC * Math.sin(absPhaseAngleCRad);
+    
+    const INx = IAx + IBx + ICx;
+    const INy = IAy + IBy + ICy;
+    
+    const IN = Math.sqrt(INx * INx + INy * INy);
+    const IAN_rad = Math.atan2(INy, INx);
+    const IAN = toDegrees(IAN_rad);
+        
+    let imax = Math.ceil(Math.max(IA, IB, IC, IN, 0.1));
+    if (imax === 0) imax = 1; // Verhindert Division durch Null
 
-    // Skalierungstexte aktualisieren
     const root = this.shadowRoot;
-    root.getElementById('ipr').textContent = `+${imax}A`;
-    root.getElementById('ipi').textContent = `+${imax}iA`;
-    root.getElementById('inr').textContent = `-${imax}A`;
-    root.getElementById('ini').textContent = `-${imax}iA`;
+    if (!root) return; 
+    
+    const iprEl = root.getElementById('ipr');
+    if (iprEl) iprEl.textContent = `+${imax}A`;
+    const ipiEl = root.getElementById('ipi');
+    if (ipiEl) ipiEl.textContent = `+${imax}iA`;
+    const inrEl = root.getElementById('inr');
+    if (inrEl) inrEl.textContent = `-${imax}A`;
+    const iniEl = root.getElementById('ini');
+    if (iniEl) iniEl.textContent = `-${imax}iA`;
 
-    // Zweites Set: Strompfeile
     this._setCursor('arrowIA', UAA + IAA, IA / imax);
     this._setCursor('arrowIB', UAB + IAB, IB / imax);
     this._setCursor('arrowIC', UAC + IAC, IC / imax);
+    this._setCursor('arrowIN', IAN, IN / imax);
   }
 
   _setCursor(id, angle, amplitude) {
+    if (!this.shadowRoot) return; 
     const xStart = 170;
     const yStart = 170;
     const length = 140;
     const rad = (angle * Math.PI) / 180;
-    const x = xStart + length * amplitude * Math.cos(rad);
-    const y = yStart - length * amplitude * Math.sin(rad);
+
+    const numAmplitude = Number(amplitude);
+    const safeAmplitude = isNaN(numAmplitude) ? 0 : numAmplitude;
+
+    const x = xStart + length * safeAmplitude * Math.cos(rad);
+    const y = yStart - length * safeAmplitude * Math.sin(rad);
 
     const el = this.shadowRoot.getElementById(id);
     if (el) {
-      el.setAttribute('x2', x);
-      el.setAttribute('y2', y);
+      el.setAttribute('x2', x.toString());
+      el.setAttribute('y2', y.toString());
+    }
+  }
+  
+  _applyColorTheme() {
+    const host = this.shadowRoot.host;
+    if (!host) return;
+
+    if (this.config.use_german_colors) {
+        host.style.setProperty('--color-l1', 'brown'); // Braun für L1
+        host.style.setProperty('--color-l2', 'black'); // Schwarz für L2
+        host.style.setProperty('--color-l3', 'grey');  // Grau für L3
+        host.style.setProperty('--color-n', 'blue');   // Blau für N
+    } else {
+        // Standardfarben (aktuelles Schema)
+        host.style.setProperty('--color-l1', '#e14621'); // Phase A
+        host.style.setProperty('--color-l2', 'green');   // Phase B
+        host.style.setProperty('--color-l3', '#1E90FF'); // Phase C
+        host.style.setProperty('--color-n', '#000000');  // Neutral
     }
   }
 }
