@@ -85,9 +85,8 @@ Nach der Installation (manuell oder über HACS) und dem Neustart von Home Assist
 2.  Klicke unten rechts auf **"+ Integration hinzufügen"**.
 3.  Suche nach "**Fronius Smartmeter IP**" und wähle es aus.
 4.  Folge dem Dialog und gib die erforderlichen Informationen ein:
-    * **URL:** Die Basis-IP deines Fronius Geräts (z.B. `192.168.1.100`). Gib hier nicht den vollen API-Pfad an, nur die Basisadresse.
-    * **Benutzername:** Der Benutzername für die htaccess-Authentifizierung.
-    * **Passwort:** Das Passwort für die htaccess-Authentifizierung.
+    * **URL:** Die Basis-IP deines Fronius Geräts (z.B. `http://192.168.1.100`). Gib hier nicht den vollen API-Pfad an, nur die Basisadresse, jedoch mit http://.
+    * **Passwort:** Das Passwort für das Web-Interface.
 5.  Klicke auf "Senden". Wenn die Verbindung erfolgreich ist, wird die Integration eingerichtet und die Entitäten werden erstellt.
 
 ## Bereitgestellte Entitäten

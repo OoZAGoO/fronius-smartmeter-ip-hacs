@@ -3,6 +3,7 @@ import logging
 import math
 from datetime import timedelta
 from typing import Any, cast, Tuple
+from .auth import FroniusJWTAuth
 
 import httpx
 
@@ -16,7 +17,6 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     CONF_URL,
-    CONF_USERNAME,
     CONF_PASSWORD,
 )
 from homeassistant.core import HomeAssistant, callback
@@ -307,10 +307,13 @@ async def async_setup_entry(
     """Set up the Fronius Smartmeter IP sensors from a config entry."""
     config = entry.data
     base_url = config[CONF_URL].rstrip('/')
-    username = config.get(CONF_USERNAME)
-    password = config.get(CONF_PASSWORD)
-    auth_tuple: Tuple[str, str] | None = (username, password) if username and password else None
-
+    password = config.get(CONF_PASSWORD)  # Nur noch Passwort, kein Username
+    
+    # JWT Auth Handler erstellen
+    jwt_auth = None
+    if password:
+        jwt_auth = FroniusJWTAuth(base_url, password)
+    
     device_name_suffix = base_url.split('//')[-1].split(':')[0]
     device_info = DeviceInfo(
         identifiers={(DOMAIN, entry.entry_id)},
@@ -322,11 +325,11 @@ async def async_setup_entry(
 
     measurements_coordinator = FroniusSmartmeterDataCoordinator(
         hass, "Fronius Measurements", f"{base_url}{API_PATH_MEASUREMENTS}",
-        auth_tuple, API_QUERY_PARAMS, DEFAULT_MEASUREMENTS_INTERVAL_SECONDS, is_measurements=True
+        jwt_auth, API_QUERY_PARAMS, DEFAULT_MEASUREMENTS_INTERVAL_SECONDS, is_measurements=True
     )
     config_coordinator = FroniusSmartmeterDataCoordinator(
         hass, "Fronius Configuration", f"{base_url}{API_PATH_CONFIG}",
-        auth_tuple, API_QUERY_PARAMS, DEFAULT_CONFIG_INTERVAL_SECONDS
+        jwt_auth, API_QUERY_PARAMS, DEFAULT_CONFIG_INTERVAL_SECONDS
     )
 
     await measurements_coordinator.async_config_entry_first_refresh()
@@ -351,11 +354,11 @@ async def async_setup_entry(
 class FroniusSmartmeterDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(
         self, hass: HomeAssistant, name: str, url: str,
-        auth: Tuple[str, str] | None,
+        jwt_auth: FroniusJWTAuth | None,  # Geändert von auth tuple
         params: dict | None, interval_seconds: int, is_measurements: bool = False
     ):
         self.api_url = url
-        self.auth_tuple = auth
+        self.jwt_auth = jwt_auth  # Geändert
         self.params = params
         self.is_measurements = is_measurements
         self._client = httpx.AsyncClient(timeout=10)
@@ -363,7 +366,17 @@ class FroniusSmartmeterDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         try:
-            response = await self._client.get(self.api_url, auth=self.auth_tuple, params=self.params)
+            cookies = {}
+            if self.jwt_auth:
+                token = await self.jwt_auth.get_token()
+                if token:
+                    cookies["jwt"] = token
+
+            response = await self._client.get(
+                self.api_url,
+                cookies=cookies,
+                params=self.params
+            )
             response.raise_for_status()
             data = cast(dict[str, Any], response.json())
             _LOGGER.debug("Data from %s: %s", self.api_url, str(data)[:800] + "..." if len(str(data)) > 800 else data) # Log more data
