@@ -1,0 +1,23 @@
+{
+  "name": "Fronius Smartmeter IP",
+  "render_readme": true,
+  "filename": "dist/fronius-smartmeter-ip-card.js",
+  "resources": [
+    {
+      "type": "module",
+      "url": "dist/fronius-smartmeter-ip-card.js"
+    },
+    {
+      "type": "module",
+      "url": "dist/fronius-smartmeter-ip-card-editor.js"
+    },
+    {
+      "type": "module",
+      "url": "dist/fronius-smartmeter-ip-card-simple.js"
+    },
+    {
+      "type": "module",
+      "url": "dist/fronius-smartmeter-ip-card-simple-editor.js"
+    }
+  ]
+}
